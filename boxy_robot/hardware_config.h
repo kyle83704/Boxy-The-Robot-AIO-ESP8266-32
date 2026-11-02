@@ -26,11 +26,17 @@
 #define BOXY_ENABLE_STATUS_LED 1
 #endif
 #endif
+#ifndef BOXY_ENABLE_CAMERA
+#define BOXY_ENABLE_CAMERA 0
+#endif
 #ifndef BOXY_SINGLE_INTERFACE
 #define BOXY_SINGLE_INTERFACE -1
 #endif
 #ifndef BOXY_LIGHT_THEME
 #define BOXY_LIGHT_THEME 0
+#endif
+#ifndef BOXY_CAMERA_STREAM_URL
+#define BOXY_CAMERA_STREAM_URL ""
 #endif
 
 #if BOXY_SINGLE_INTERFACE < -1 || BOXY_SINGLE_INTERFACE > 3
@@ -60,6 +66,12 @@
 #endif
 #if BOXY_ENABLE_STATUS_LED != 0 && BOXY_ENABLE_STATUS_LED != 1
 #error "BOXY_ENABLE_STATUS_LED must be 0 or 1"
+#endif
+#if BOXY_ENABLE_CAMERA != 0 && BOXY_ENABLE_CAMERA != 1
+#error "BOXY_ENABLE_CAMERA must be 0 or 1"
+#endif
+#if defined(ESP8266) && BOXY_ENABLE_CAMERA
+#error "BOXY_ENABLE_CAMERA is only supported on ESP32"
 #endif
 
 #if defined(ESP8266)

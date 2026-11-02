@@ -10,6 +10,7 @@ assignments independently for each build environment.
 - [Build and upload](#build-and-upload)
 - [Configuration flags](#configuration-flags)
 - [Ready-to-use configurations](#ready-to-use-configurations)
+- [ESP32-CAM video](#esp32-cam-video)
 - [Wi-Fi and controller access](#wi-fi-and-controller-access)
 - [Hardware and pin assignments](#hardware-and-pin-assignments)
 - [Making and selecting songs](#making-and-selecting-songs)
@@ -23,10 +24,12 @@ Install [PlatformIO Core](https://platformio.org/install/cli) or the
 PlatformIO IDE extension for Visual Studio Code. The supplied environments
 target:
 
-| Environment | Default board | PlatformIO board ID |
+| PlatformIO environment | Default board | PlatformIO board ID |
 |---|---|---|
-| ESP32 | ESP32 Dev Module | `esp32dev` |
-| ESP8266 | NodeMCU 1.0 (ESP-12E) | `nodemcuv2` |
+| `esp32` | ESP32 Dev Module | `esp32dev` |
+| `esp8266` | NodeMCU 1.0 (ESP-12E) | `nodemcuv2` |
+| `esp32cam_experimental` | AI-Thinker ESP32-CAM (robot) | `esp32cam` |
+| `esp32cam_streamer_experimental` | AI-Thinker ESP32-CAM (streamer) | `esp32cam` |
 
 Open a terminal in the folder containing `platformio.ini`. PlatformIO fetches
 the toolchains and libraries on the first build.
@@ -83,7 +86,7 @@ change the browser-based song tools or standalone HTML files.
 
 | Flag | Value | Melody |
 |---|---:|---|
-| `BOXY_SONG` | `0` | Custom melody in `aio_boxy_roam6/song.h` (default). |
+| `BOXY_SONG` | `0` | Custom melody in `boxy_robot/song.h` (default). |
 | `BOXY_SONG` | `1` | Built-in Boxy Riff. |
 | `BOXY_SONG` | `2` | Built-in ascending scale. |
 
@@ -104,6 +107,7 @@ Set a feature flag to `0` to disable that hardware in the firmware. Set it to
 | `BOXY_ENABLE_BUZZER` | `1` | Horn and song playback do nothing; buzzer controls are hidden. |
 | `BOXY_ENABLE_NEOPIXEL` | `1` | NeoPixel library and strip are not initialized. |
 | `BOXY_ENABLE_STATUS_LED` | `1` on ESP32, `0` on ESP8266 | Status LED is not initialized; its control/status is hidden. |
+| `BOXY_ENABLE_CAMERA` | `0` | Enables the AI-Thinker ESP32-CAM stream server; ESP32 only. |
 
 The webpage obtains these settings from the firmware at `/ui-config.js`, so its
 theme, selected interface, and hardware controls stay in sync with the build.
@@ -111,7 +115,7 @@ theme, selected interface, and hardware controls stay in sync with the build.
 ### Pin overrides
 
 Board-specific defaults and the complete list of pin override names are in
-[`hardware_config.h`](aio_boxy_roam6/hardware_config.h). Override a pin in
+[`hardware_config.h`](boxy_robot/hardware_config.h). Override a pin in
 `build_flags`, for example:
 
 ```ini
@@ -228,6 +232,90 @@ build_flags =
 The driving modes and motor controls are hidden because the motors are
 disabled. The device still serves the web page and WebSocket interface.
 
+## Experimental ESP32-CAM video
+
+ESP32-CAM support is experimental and targets the AI-Thinker ESP32-CAM with an
+OV2640 camera. It is ESP32-only; the existing ESP32 Dev Module and ESP8266
+builds remain unchanged. Camera firmware exposes an MJPEG stream at
+`http://<camera-ip>:81/stream`. The joystick page displays it alongside the
+drive joystick when camera support is enabled or a stream URL is configured.
+
+There are two supported arrangements:
+
+### Integrated camera and robot controller (`esp32cam_experimental`)
+
+Use one AI-Thinker ESP32-CAM for both the camera and the robot controller.
+Build and upload:
+
+```text
+pio run -e esp32cam_experimental
+pio run -e esp32cam_experimental -t upload
+```
+
+The build enables the camera automatically and the UI uses the same host as
+the controller, on port 81. This board has very few free GPIOs: the provided
+build map assigns the four motor-driver inputs to GPIO 13, 14, 15, and 12 and
+disables the servo, ultrasonic and IR sensors, buzzer, NeoPixels, and status
+LED. GPIO12 and GPIO15 are boot-strapping pins. Ensure attached motor-driver
+inputs do not force an invalid boot level; disconnect or isolate the driver
+during troubleshooting or flashing if the board will not boot. Do not reuse
+the standard ESP32 pin map on an ESP32-CAM. Check the exact module pinout,
+camera, PSRAM, regulator capacity, and motor-supply wiring before powering it.
+
+The integrated arrangement is best for compact builds where the limited
+remaining GPIOs and disabled sensors are acceptable.
+
+### Separate camera streamer and robot controller (`esp32cam_streamer_experimental`)
+
+Keep the existing ESP32 Dev Module or ESP8266 as the robot controller, and
+use a second AI-Thinker ESP32-CAM only for video. This preserves the
+controller's existing pin map and all available sensors. Build the camera
+unit with:
+
+```text
+pio run -e esp32cam_streamer_experimental
+pio run -e esp32cam_streamer_experimental -t upload
+```
+
+Configure both devices to join the same Wi-Fi network. Add station credentials
+to the existing `build_flags` block in the streamer environment (append these
+options; do not create a second `build_flags` key):
+
+```ini
+-D BOXY_STA_SSID=\"your-wifi-name\"
+-D BOXY_STA_PASSWORD=\"your-wifi-password\"
+```
+
+Find the camera IP in its serial output at 115200 baud, and reserve that IP in
+the router if possible. In the robot controller environment's `build_flags`,
+set the stream URL (substitute the camera's reachable IP). Append it to any
+existing `build_flags` block:
+
+```ini
+-D BOXY_CAMERA_STREAM_URL=\"http://192.168.1.50:81/stream\"
+```
+
+Rebuild/upload both boards. The stream URL is a build-time setting; the
+camera's address must remain reachable by the browser running the robot UI.
+The standalone streamer starts a password-protected `Boxy-Cam` access point
+if it cannot join the configured station network. Its defaults can be changed
+by appending these options to the streamer's existing `build_flags` block:
+
+```ini
+-D BOXY_CAMERA_AP_SSID=\"your-camera-name\"
+-D BOXY_CAMERA_AP_PASSWORD=\"your-own-password\"
+```
+
+The AP is useful for preview or setup, but the controller and viewing browser
+must share a network path to the camera for the separate-device arrangement.
+
+Both arrangements require sufficient power for the ESP32-CAM and camera.
+Motor electrical noise or supply dips can reset the camera or interrupt Wi-Fi;
+use an appropriately rated, regulated supply and common ground. MJPEG consumes
+Wi-Fi bandwidth, so reduce the frame size in `camera_stream.cpp` if the link
+is unreliable. The stream endpoint has no authentication; use it only on a
+trusted network.
+
 ## Wi-Fi and controller access
 
 Without station credentials, the firmware starts an open access point named
@@ -281,13 +369,13 @@ song playback.
 
 ### Edit the custom song
 
-1. Open [`song-converter.html`](aio_boxy_roam6/song-converter.html) in a
+1. Open [`song-converter.html`](boxy_robot/song-converter.html) in a
    browser.
 2. Paste Arduino melody source containing note `#define`s, an `int melody[]`
    array, and an `int tempo` value. Use music you created or have permission
    to use.
 3. Convert the melody and copy the generated code into
-   [`song.h`](aio_boxy_roam6/song.h).
+   [`song.h`](boxy_robot/song.h).
 4. Ensure the generated identifiers are named `customsongMelody`,
    `customsongTempo`, and `customsongNotes`. If the converter generated
    different names, rename those three identifiers to match.
@@ -312,19 +400,19 @@ indicates a dotted note in the Arduino song format.
 ### Add another built-in song
 
 Add a melody array and its tempo/note count in
-[`music_songs.h`](aio_boxy_roam6/music_songs.h), add a new `BOXY_SONG` case,
+[`music_songs.h`](boxy_robot/music_songs.h), add a new `BOXY_SONG` case,
 and update the flag's validation error and this README's song table. Use the
 same alternating note/duration format. Then build each target to verify the
 song compiles for both platforms.
 
 ## Changing the web interface
 
-The embedded controller page is [`modes.h`](aio_boxy_roam6/modes.h), which
+The embedded controller page is [`modes.h`](boxy_robot/modes.h), which
 contains the HTML, CSS, and JavaScript. Change the embedded file when you want
-to modify the firmware-served UI. [`light-theme.html`](aio_boxy_roam6/light-theme.html)
+to modify the firmware-served UI. [`light-theme.html`](boxy_robot/light-theme.html)
 is a standalone design reference and is not compiled into the firmware.
 
-[`web_ui.cpp`](aio_boxy_roam6/web_ui.cpp) serves the embedded page and the
+[`web_ui.cpp`](boxy_robot/web_ui.cpp) serves the embedded page and the
 generated `/ui-config.js` endpoint. Keep the configuration endpoint in place:
 the page uses it to select the interface, theme, and enabled hardware controls.
 
@@ -333,14 +421,16 @@ the page uses it to select the interface, theme, and enabled hardware controls.
 | File | Purpose |
 |---|---|
 | [`platformio.ini`](platformio.ini) | ESP32/ESP8266 environments, boards, and library dependencies. |
-| [`aio_boxy_roam6.cpp`](aio_boxy_roam6/aio_boxy_roam6.cpp) | Firmware entry points, robot behavior, sensors, Wi-Fi, and WebSocket commands. |
-| [`hardware_config.h`](aio_boxy_roam6/hardware_config.h) | Hardware feature flags, board pins, and optional hardware wrappers. |
-| [`music_player.cpp`](aio_boxy_roam6/music_player.cpp) | Non-blocking buzzer melody playback. |
-| [`music_songs.h`](aio_boxy_roam6/music_songs.h) | Selects the custom or built-in melody at compile time. |
-| [`song.h`](aio_boxy_roam6/song.h) | Editable custom song data and note definitions. |
-| [`web_ui.cpp`](aio_boxy_roam6/web_ui.cpp) | HTTP routes and generated web UI build configuration. |
-| [`modes.h`](aio_boxy_roam6/modes.h) | Embedded controller HTML, CSS, and JavaScript. |
-| [`song-converter.html`](aio_boxy_roam6/song-converter.html) | Browser tool for converting Arduino melody source. |
+| [`boxy_robot.cpp`](boxy_robot/boxy_robot.cpp) | Firmware entry points, robot behavior, sensors, Wi-Fi, and WebSocket commands. |
+| [`hardware_config.h`](boxy_robot/hardware_config.h) | Hardware feature flags, board pins, and optional hardware wrappers. |
+| [`camera_stream.cpp`](boxy_robot/camera_stream.cpp) | AI-Thinker camera initialization and MJPEG stream server. |
+| [`camera_standalone.cpp`](boxy_robot/camera_standalone.cpp) | Wi-Fi setup for the camera-only streamer environment. |
+| [`music_player.cpp`](boxy_robot/music_player.cpp) | Non-blocking buzzer melody playback. |
+| [`music_songs.h`](boxy_robot/music_songs.h) | Selects the custom or built-in melody at compile time. |
+| [`song.h`](boxy_robot/song.h) | Editable custom song data and note definitions. |
+| [`web_ui.cpp`](boxy_robot/web_ui.cpp) | HTTP routes and generated web UI build configuration. |
+| [`modes.h`](boxy_robot/modes.h) | Embedded controller HTML, CSS, and JavaScript. |
+| [`song-converter.html`](boxy_robot/song-converter.html) | Browser tool for converting Arduino melody source. |
 
 ## GitHub checklist
 

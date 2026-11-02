@@ -25,7 +25,16 @@ String uiBuildOptionsScript() {
   script += String(BOXY_ENABLE_BUZZER);
   script += ",statusLed:";
   script += String(BOXY_ENABLE_STATUS_LED);
-  script += "}};";
+  script += "},cameraEnabled:";
+  script += String(BOXY_ENABLE_CAMERA);
+  script += ",cameraUrl:'";
+  for (const char *character = BOXY_CAMERA_STREAM_URL; *character; ++character) {
+    if (*character == '\\' || *character == '\'') {
+      script += '\\';
+    }
+    script += *character;
+  }
+  script += "'};";
   return script;
 }
 

@@ -39,6 +39,11 @@ body{font-family:Arial,sans-serif;background-color:#333;color:#eee;text-align:ce
 .text-input-group{display:flex;margin-top:20px}
 .text-input-group input{flex:1;padding:10px;font-size:1em;border:1px solid #0ff;background-color:#222;color:#eee;border-radius:5px 0 0 5px}
 .text-input-group button{padding:10px 15px;background-color:#0ff;color:#111;border:none;border-radius:0 5px 5px 0;cursor:pointer}
+.joystick-camera-layout{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.joystick-camera-layout>.control-group{flex:0 0 230px;margin-bottom:20px}
+.camera-panel{flex:1;min-width:280px;max-width:480px;margin-bottom:20px;padding:12px;background:rgba(255,255,255,.1);border-radius:8px;box-sizing:border-box}
+.camera-panel h3{margin:0 0 10px}
+.camera-panel img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#111;border-radius:5px}
 .dual-joystick-grid{display:flex;justify-content:space-around;width:100%}
 .mode-instructions{margin-top:20px;padding:15px;background-color:rgba(0,0,0,.5);border-left:5px solid #0ff;text-align:left}
 .mode-instructions h3{color:#0ff;margin-top:0}
@@ -176,8 +181,14 @@ document.body.className=uiOptions.theme+
 <label for="servoSlider0">Servo Angle: <span id="servoValue0">90°</span></label>
 <input type="range" id="servoSlider0" min="0" max="180" value="90" oninput="updateServo(this)">
 </div>
+<div class="joystick-camera-layout">
 <div class="control-group">
 <div id="joy1Div" class="joystick-container"></div>
+</div>
+<div id="cameraPanel" class="camera-panel hidden">
+<h3>Live Camera</h3>
+<img id="cameraFeed" alt="ESP32-CAM live video">
+</div>
 </div>
 <div class="control-group hardware-led">
 <button onclick="toggleLED()">Toggle LED</button>
@@ -538,6 +549,11 @@ var JoyStick = (function(container, parameters) {
 // End of VirtualJoystick.js content
 
 const socket = new WebSocket("ws://" + window.location.hostname + "/ws");
+if (uiOptions.cameraEnabled || uiOptions.cameraUrl) {
+    document.getElementById('cameraFeed').src = uiOptions.cameraUrl ||
+        "http://" + window.location.hostname + ":81/stream";
+    document.getElementById('cameraPanel').classList.remove('hidden');
+}
 var joy1 = null, joy2 = null, joy3 = null; // Initialize to null
 var joy1Interval = null, joy2Interval = null; // Global interval variables
 

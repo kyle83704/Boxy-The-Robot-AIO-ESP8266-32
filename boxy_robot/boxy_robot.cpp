@@ -30,6 +30,9 @@
 
 #include "music_player.h"
 #include "web_ui.h"
+#if BOXY_ENABLE_CAMERA
+#include "camera_stream.h"
+#endif
 
 // === WiFi Configuration ===
 #ifndef BOXY_STA_SSID
@@ -672,6 +675,12 @@ void setup() {
 #endif
 
   setupWiFi();
+
+#if BOXY_ENABLE_CAMERA
+  if (!startCameraStream()) {
+    DEBUG_PRINTLN("Camera stream is unavailable");
+  }
+#endif
 
   if (MDNS.begin(hostname)) {
     DEBUG_PRINTLN("mDNS responder started");
