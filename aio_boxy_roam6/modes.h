@@ -1,0 +1,811 @@
+#ifndef MODES_H
+#define MODES_H
+
+const char modes_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Boxy AIO Control</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<script src="/ui-config.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background-color:#333;color:#eee;text-align:center;margin:0;padding:0;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
+.header{background-color:#222;padding:10px;display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;flex-wrap:wrap}
+.header h2{margin:0;color:#0ff;flex-grow:1}
+.mode-buttons{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.mode-buttons button{padding:8px 15px;font-size:.9em;border:none;border-radius:5px;background-color:#3498db;color:white;cursor:pointer;transition:background-color .3s ease;white-space:nowrap}
+.mode-buttons button:hover{background-color:#2980b9}
+.mode-buttons button.active{background-color:#e67e22}
+.status-bar{background-color:#444;padding:5px;font-size:.8em;display:flex;justify-content:space-around;width:100%;box-sizing:border-box}
+.status-bar div{flex:1;text-align:center;padding:5px}
+.status-bar div span{font-weight:700}
+.content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;width:100%;box-sizing:border-box}
+.mode-section{display:none;width:100%;max-width:800px;margin-top:20px;padding:20px;background:rgba(0,0,0,.7);border-radius:10px;box-shadow:0 0 15px rgba(0,255,255,.5);box-sizing:border-box}
+.mode-section.active{display:block}
+.control-group{margin-bottom:20px;padding:15px;background:rgba(255,255,255,.1);border-radius:8px}
+.joystick-container{width:200px;height:200px;margin:10px auto;border:2px solid #0ff;border-radius:50%;position:relative;background-color:rgba(0,0,0,.5);touch-action:none}
+.joystick-base{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:180px;height:180px;border:2px dashed #0ff;border-radius:50%}
+.joystick-stick{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;background-color:#0ff;border-radius:50%;cursor:grab}
+.joystick-stick.active{cursor:grabbing}
+.button-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:20px}
+.button-grid button{padding:12px 20px;font-size:1.1em;background-color:#0ff;border:none;border-radius:5px;color:#111;cursor:pointer;transition:background-color .3s ease}
+.button-grid button:hover{background-color:#00e6e6}
+.slider-group{margin:20px 0;display:flex;flex-direction:column;align-items:center}
+.slider-group label{margin-bottom:10px;font-size:1.1em}
+.slider-group input[type=range]{width:80%;max-width:400px;height:25px;background:#555;border-radius:15px;outline:none;-webkit-appearance:none;appearance:none}
+.slider-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:25px;height:25px;background:#0ff;border-radius:50%;cursor:pointer}
+.slider-group input[type=range]::-moz-range-thumb{width:25px;height:25px;background:#0ff;border-radius:50%;cursor:pointer}
+.text-input-group{display:flex;margin-top:20px}
+.text-input-group input{flex:1;padding:10px;font-size:1em;border:1px solid #0ff;background-color:#222;color:#eee;border-radius:5px 0 0 5px}
+.text-input-group button{padding:10px 15px;background-color:#0ff;color:#111;border:none;border-radius:0 5px 5px 0;cursor:pointer}
+.dual-joystick-grid{display:flex;justify-content:space-around;width:100%}
+.mode-instructions{margin-top:20px;padding:15px;background-color:rgba(0,0,0,.5);border-left:5px solid #0ff;text-align:left}
+.mode-instructions h3{color:#0ff;margin-top:0}
+.mode-instructions ul{list-style-type:disc;padding-left:20px}
+.footer{margin-top:auto;padding:10px;background-color:#222;width:100%;box-sizing:border-box}
+.hidden{display:none}@media(max-width:600px){.header{flex-direction:column}.mode-buttons{margin-top:10px}.dual-joystick-grid{flex-direction:column;align-items:center}}
+
+body.theme-light{background-color:#f4f4f4;color:#333}
+body.theme-light .header{background-color:#e0e0e0}
+body.theme-light .header h2,body.theme-light .mode-instructions h3{color:#007bff}
+body.theme-light .mode-buttons button,body.theme-light .button-grid button{background-color:#007bff;color:#fff}
+body.theme-light .mode-buttons button:hover,body.theme-light .button-grid button:hover{background-color:#0056b3}
+body.theme-light .mode-buttons button.active{background-color:#ff8c00}
+body.theme-light .status-bar{background-color:#d0d0d0;color:#333}
+body.theme-light .mode-section{background:rgba(255,255,255,.7);box-shadow:0 0 15px rgba(0,123,255,.2)}
+body.theme-light .control-group{background:rgba(0,0,0,.05)}
+body.theme-light .mode-instructions{background-color:rgba(0,0,0,.04);border-left-color:#007bff}
+body.theme-light .footer{background-color:#e0e0e0}
+body.theme-light .joystick-container{border-color:#007bff;background-color:rgba(255,255,255,.5)}
+body.theme-light .joystick-base{border-color:#007bff}
+body.theme-light .joystick-stick{background-color:#007bff}
+body.theme-light .slider-group input[type=range]{background:#d0d0d0}
+body.theme-light .slider-group input[type=range]::-webkit-slider-thumb{background:#007bff}
+body.theme-light .slider-group input[type=range]::-moz-range-thumb{background:#007bff}
+body.theme-light .text-input-group input{border-color:#007bff;background-color:#fff;color:#333}
+body.theme-light .text-input-group button{background-color:#007bff;color:#fff}
+body.single-mode-0 #btnMode1,body.single-mode-0 #btnMode2,body.single-mode-0 #btnMode3,
+body.single-mode-0 #mode1,body.single-mode-0 #mode2,body.single-mode-0 #mode3,
+body.single-mode-1 #btnMode0,body.single-mode-1 #btnMode2,body.single-mode-1 #btnMode3,
+body.single-mode-1 #mode0,body.single-mode-1 #mode2,body.single-mode-1 #mode3,
+body.single-mode-2 #btnMode0,body.single-mode-2 #btnMode1,body.single-mode-2 #btnMode3,
+body.single-mode-2 #mode0,body.single-mode-2 #mode1,body.single-mode-2 #mode3,
+body.single-mode-3 #btnMode0,body.single-mode-3 #btnMode1,body.single-mode-3 #btnMode2,
+body.single-mode-3 #mode0,body.single-mode-3 #mode1,body.single-mode-3 #mode2{display:none!important}
+body.no-motors #mode0,body.no-motors #mode1,body.no-motors #mode2,body.no-motors #mode3,
+body.no-motors .mode-buttons{display:none!important}
+body.no-servo .hardware-servo,body.no-buzzer .hardware-buzzer,
+body.no-status-led .hardware-led,body.no-status-led .led-status,
+body.no-infrared .infrared-status,body.no-ultrasonic .ultrasonic-status{display:none!important}
+
+/* New Flexbox Layout for Dual Joystick Mode (Mode 1) */
+.dual-joystick-main-layout {
+    display: flex;
+    flex-direction: row; /* Arrange items in a row */
+    justify-content: space-around; /* Distribute space around items */
+    align-items: flex-start; /* Align items to the top of the container */
+    width: 100%;
+    gap: 15px; /* Add some space between columns */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens if needed */
+}
+
+.dual-joystick-main-layout > .joystick-column { /* Styling for joystick containers */
+    flex: 1; /* Allow joysticks to take up equal space */
+    min-width: 200px; /* Minimum width for joystick column to prevent squishing */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0; /* Remove padding from control-group if already applied by parent */
+    margin-bottom: 0; /* Adjust margin if needed */
+}
+
+.dual-joystick-main-layout .joystick-container {
+    margin: 0px auto 10px auto; /* Adjust margin for joystick */
+}
+
+.center-controls {
+    flex: 1.5; /* Allow center controls to take up more space than individual joysticks */
+    min-width: 250px; /* Minimum width for center controls */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Space between sliders */
+    padding: 15px; /* Add padding to center controls */
+    background: rgba(255,255,255,.05); /* Slightly different background for visual separation */
+    border-radius: 8px;
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Adjustments for responsiveness on smaller screens (e.g., portrait phone) */
+@media(max-width: 768px) { /* Adjust breakpoint as needed for landscape phones */
+    .dual-joystick-main-layout {
+        flex-direction: column; /* Stack columns vertically on smaller screens */
+        align-items: center;
+    }
+    .dual-joystick-main-layout > .joystick-column,
+    .center-controls {
+        width: 100%; /* Take full width when stacked */
+        max-width: 400px; /* Limit max width for readability */
+        margin-bottom: 20px; /* Add space between stacked sections */
+    }
+    .dual-joystick-main-layout .joystick-container {
+        margin-bottom: 10px; /* Keep some space below joystick */
+    }
+    .center-controls .control-group {
+        margin-bottom: 0; /* Remove extra margin from individual control groups inside center-controls */
+    }
+}
+</style>
+</head>
+<body>
+<script>
+const uiOptions=window.BOXY_UI_OPTIONS;
+document.body.className=uiOptions.theme+
+    (uiOptions.singleInterface>=0?" single-mode-"+uiOptions.singleInterface:"")+
+    (uiOptions.features.motors?"":" no-motors")+
+    (uiOptions.features.servo?"":" no-servo")+
+    (uiOptions.features.buzzer?"":" no-buzzer")+
+    (uiOptions.features.statusLed?"":" no-status-led")+
+    (uiOptions.features.infrared?"":" no-infrared")+
+    (uiOptions.features.ultrasonic?"":" no-ultrasonic");
+</script>
+<div class="header">
+<h2>Boxy AIO Control</h2>
+<div class="mode-buttons">
+<button onclick="setMode(0)" id="btnMode0">Joystick</button>
+<button onclick="setMode(1)" id="btnMode1">Dual Joystick</button>
+<button onclick="setMode(2)" id="btnMode2">Roam</button>
+<button onclick="setMode(3)" id="btnMode3">ByLine</button>
+</div>
+</div>
+<div class="status-bar">
+<div class="status-item infrared-status">IR Left: <span id="ir1Value">N/A</span></div>
+<div class="status-item infrared-status">IR Right: <span id="ir2Value">N/A</span></div>
+<div class="status-item ultrasonic-status">Distance: <span id="distanceValue">N/A</span> cm</div>
+<div class="status-item led-status">LED: <span id="ledStateDisplay">N/A</span></div>
+</div>
+<div class="content">
+<div id="mode0" class="mode-section active">
+<h2>Joystick Control</h2>
+<div class="control-group">
+<label for="maxSpeedSlider0">Max Speed: <span id="sliderValue0">255</span></label>
+<input type="range" id="maxSpeedSlider0" min="0" max="255" value="255" oninput="updateSliderValue(this)">
+</div>
+<div class="control-group hardware-servo">
+<label for="servoSlider0">Servo Angle: <span id="servoValue0">90°</span></label>
+<input type="range" id="servoSlider0" min="0" max="180" value="90" oninput="updateServo(this)">
+</div>
+<div class="control-group">
+<div id="joy1Div" class="joystick-container"></div>
+</div>
+<div class="control-group hardware-led">
+<button onclick="toggleLED()">Toggle LED</button>
+</div>
+<div class="control-group hardware-buzzer">
+<label for="hornFrequencySlider0">Horn Frequency: <span id="hornFrequency0">1000</span> Hz</label>
+<input type="range" id="hornFrequencySlider0" min="200" max="2000" value="1000" oninput="updateHornFreqValue(this)">
+<button id="hornButton0">Hold for Horn</button>
+</div>
+<div class="mode-instructions">
+<h3>Instructions:</h3>
+<ul>
+<li>Use the joystick to control robot movement.</li>
+<li>Adjust Max Speed to set the robot's top speed.</li>
+<li>Control the servo angle.</li>
+<li>Toggle the onboard LED and trigger the buzzer.</li>
+<li>Hold the Horn button to make a sound at the selected frequency.</li>
+</ul>
+</div>
+</div>
+<div id="mode1" class="mode-section">
+<h2>Dual Joystick Control</h2>
+<div class="dual-joystick-main-layout">
+<div class="control-group joystick-column">
+<div id="joy2Div" class="joystick-container"></div>
+<p>Left Motor</p>
+</div>
+<div class="center-controls">
+<div class="control-group">
+<button class="hardware-led" onclick="toggleLED()">Toggle LED</button>
+</div>
+<div class="control-group">
+<label for="maxSpeedSlider1">Max Speed: <span id="sliderValue1">255</span></label>
+<input type="range" id="maxSpeedSlider1" min="0" max="255" value="255" oninput="updateSliderValue(this)">
+</div>
+<div class="control-group hardware-servo">
+<label for="servoSlider1">Servo Angle: <span id="servoValue1">90°</span></label>
+<input type="range" id="servoSlider1" min="0" max="180" value="90" oninput="updateServo(this)">
+</div>
+<div class="control-group hardware-buzzer">
+<label for="hornFrequencySlider1">Horn Frequency: <span id="hornFrequency1">1000</span> Hz</label>
+<input type="range" id="hornFrequencySlider1" min="200" max="2000" value="1000" oninput="updateHornFreqValue(this)">
+<button id="hornButton1">Hold for Horn</button>
+</div>
+</div>
+<div class="control-group joystick-column">
+<div id="joy3Div" class="joystick-container"></div>
+<p>Right Motor</p>
+</div>
+</div>
+<div class="mode-instructions">
+<h3>Instructions:</h3>
+<ul>
+<li>Use the left joystick to control the left motor's speed and the right joystick for the right motor's speed.</li>
+<li>Adjust Max Speed to set the robot's top speed.</li>
+<li>Control the servo angle.</li>
+<li>Hold the Horn button to make a sound at the selected frequency.</li>
+<li>This mode provides independent control over each motor for precision.</li>
+</ul>
+</div>
+</div>
+<div id="mode2" class="mode-section">
+<h2>Roam Mode</h2>
+<div class="control-group">
+<button onclick="sendRoamCommand('start roam')">Start Roam</button>
+<button onclick="sendRoamCommand('stop roam')">Stop Roam</button>
+</div>
+<div class="mode-instructions">
+<h3>Instructions:</h3>
+<ul>
+<li>Place the robot on a black line on a white surface, or a white line on a black surface (depending on sensor setup).</li>
+<li>Click "Start Roam" to begin autonomous Roaming.</li>
+<li>Click "Stop Roam" to halt the robot.</li>
+</ul>
+</div>
+</div>
+<div id="mode3" class="mode-section">
+<h2>ByLine Mode</h2>
+<div class="button-grid">
+<button id="bylineForward">Forward</button>
+<button id="bylineBackward">Backward</button>
+<button id="bylineLeft">Turn Left</button>
+<button id="bylineRight">Turn Right</button>
+<button onclick="sendCommand('stop', 0)">Stop</button>
+<button onclick="promptSpeed()">Set Speed</button>
+<button onclick="promptServo()">Set Servo</button>
+</div>
+<div class="control-group text-input-group">
+<input type="text" id="customCommand" placeholder="Enter custom command (e.g., 'f,1000' for forward 1s)">
+<button onclick="sendCustomCommand()">Send Custom</button>
+</div>
+<div class="mode-instructions">
+<h3>Instructions:</h3>
+<ul>
+<li>Use the predefined buttons to send common commands.</li>
+<li>"Set Speed" allows you to set the max speed (0-255) for ByLine mode.</li>
+<li>"Set Servo" allows you to set the servo angle (0-180).</li>
+<li>Use the "Custom Command" input for direct commands like "f,1000" (forward for 1000ms), "b,500" (backward for 500ms), "l,300" (left for 300ms), "r,300" (right for 300ms), "p,700" (set PWM/speed to 700), "s,90" (set servo to 90 degrees).</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="footer">Boxy AIO Controller</div>
+<script>
+// VirtualJoystick.js content embedded directly here
+var JoyStick = (function(container, parameters) {
+    parameters = parameters || {};
+    var title = (undefined === parameters.title ? 'joystick' : parameters.title),
+        width = (undefined === parameters.width ? 0 : parameters.width),
+        height = (undefined === parameters.height ? 0 : parameters.height),
+        internalFillColor = (undefined === parameters.internalFillColor ? '#00AA00' : parameters.internalFillColor),
+        internalLineWidth = (undefined === parameters.internalLineWidth ? 2 : parameters.internalLineWidth),
+        internalStrokeColor = (undefined === parameters.internalStrokeColor ? '#003300' : parameters.internalStrokeColor),
+        externalLineWidth = (undefined === parameters.externalLineWidth ? 2 : parameters.externalLineWidth),
+        externalStrokeColor = (undefined === parameters.externalStrokeColor ? '#008000' : parameters.externalStrokeColor);
+    
+    // Create Canvas element and add it in the Container object
+    var objContainer = document.getElementById(container);
+    var canvas = document.createElement('canvas');
+    canvas.id = title;
+    if(width == 0) width = objContainer.clientWidth;
+    if(height == 0) height = objContainer.clientHeight;
+    canvas.width = width;
+    canvas.height = height;
+    objContainer.appendChild(canvas);
+    var context=canvas.getContext('2d');
+    
+    var pressed = 0; // Bool - 1=Yes - 0=No
+    var circumference = 2 * Math.PI;
+    var internalRadius = (canvas.width-((50*2)+10))/2;
+    var maxMoveStick = internalRadius + 5;
+    var externalRadius = internalRadius + 30;
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    var directionHorizontalLimitPos = canvas.width / 10;
+    var directionHorizontalLimitNeg = directionHorizontalLimitPos * -1;
+    var directionVerticalLimitPos = canvas.height / 10;
+    var directionVerticalLimitNeg = directionVerticalLimitPos * -1;
+    // Used to save current position of stick
+    var movedX=centerX;
+    var movedY=centerY;
+    var currentFinger = -1;
+
+    canvas.addEventListener('touchstart', onTouchStart, true);
+    canvas.addEventListener('touchmove', onTouchMove, true);
+    canvas.addEventListener('touchend', onTouchEnd, true);
+
+    canvas.addEventListener('mousedown', onMouseDown, true);
+    canvas.addEventListener('mousemove', onMouseMove, true);
+    canvas.addEventListener('mouseup', onMouseUp, true);
+
+    // Draw the object
+    drawExternal();
+    drawInternal(centerX, centerY);
+    /******************************************************
+     * Private methods
+     *****************************************************/
+    /**
+     * @desc Draw the external circle used as reference position
+     */
+    function drawExternal()
+    {
+        context.beginPath();
+        context.arc(centerX, centerY, externalRadius, 0, circumference, false);
+        context.lineWidth = externalLineWidth;
+        context.strokeStyle = externalStrokeColor;
+        context.stroke();
+    }
+    /**
+     * @desc Draw the internal stick in the current position the user have moved it
+     */
+    function drawInternal()
+    {
+        context.beginPath();
+        // Clamp movedX and movedY to stay within the external circle
+        var distance = Math.sqrt(Math.pow(movedX - centerX, 2) + Math.pow(movedY - centerY, 2));
+        if (distance > maxMoveStick) {
+            var angle = Math.atan2(movedY - centerY, movedX - centerX);
+            movedX = centerX + maxMoveStick * Math.cos(angle);
+            movedY = centerY + maxMoveStick * Math.sin(angle);
+        }
+
+        context.arc(movedX, movedY, internalRadius, 0, circumference, false);
+        // create radial gradient
+        var grd = context.createRadialGradient(centerX, centerY, 5, centerX, centerY, 200);
+        // Light color
+        grd.addColorStop(0, internalFillColor);
+        // Dark color
+        grd.addColorStop(1, internalStrokeColor);
+        context.fillStyle = grd;
+        context.fill();
+        context.lineWidth = internalLineWidth;
+        context.strokeStyle = internalStrokeColor;
+        context.stroke();
+    }
+    
+    /**
+     * @desc Events for manage touch
+     */
+    function onTouchStart(event)  {
+        pressed=1;
+
+        var rect = canvas.getBoundingClientRect();
+
+        // Iterate through all touches to find the one on our canvas
+        for (var i=0; i < event.touches.length; i++) {
+            var touchX = event.touches[i].pageX - rect.left;
+            var touchY = event.touches[i].pageY - rect.top;
+
+            // Check if the touch is within the canvas bounds
+            if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+                currentFinger = i;
+                movedX = touchX;
+                movedY = touchY;
+                // Clear and redraw immediately on touch start
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                drawExternal();
+                drawInternal();
+                break; // Found the touch, no need to check others
+            }
+        }
+        event.preventDefault(); // Prevent scrolling/zooming
+    }
+
+    function onTouchMove(event) {
+        event.preventDefault(); // Prevent the browser from doing its default thing (scroll, zoom)
+        if(pressed == 1 && currentFinger > -1) {
+            try {
+                movedX = event.touches[currentFinger].pageX - canvas.getBoundingClientRect().left;
+                movedY = event.touches[currentFinger].pageY - canvas.getBoundingClientRect().top;
+                // Delete canvas
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                // Redraw object
+                drawExternal();
+                drawInternal();
+            } catch(err) {
+                console.error("TouchMove error:", err);
+            }
+        }
+    }
+    
+    function onTouchEnd(event)  {
+        pressed=0;
+        currentFinger=-1;
+        // Reset position store variable
+        movedX=centerX;
+        movedY=centerY;
+        // Delete canvas
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        // Redraw object
+        drawExternal();
+        drawInternal();
+    }
+    /**
+     * @desc Events for manage mouse
+     */
+    function onMouseDown(event) {
+        pressed=1;
+        movedX = event.pageX - canvas.getBoundingClientRect().left;
+        movedY = event.pageY - canvas.getBoundingClientRect().top;
+        // Clear and redraw immediately on mouse down
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        drawExternal();
+        drawInternal();
+    }
+    function onMouseMove(event) {
+        if(pressed == 1) {
+            movedX = event.pageX - canvas.getBoundingClientRect().left;
+            movedY = event.pageY - canvas.getBoundingClientRect().top;
+            // Delete canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            // Redraw object
+            drawExternal();
+            drawInternal();
+        }
+    }
+    function onMouseUp(event) {
+        pressed=0;
+        // Reset position store variable
+        movedX=centerX;
+        movedY=centerY;
+        // Delete canvas
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        // Redraw object
+        drawExternal();
+        drawInternal();
+    }
+    /******************************************************
+     * Public methods
+     *****************************************************/
+    /**
+     * @desc The width of canvas
+     * @return Number of pixel width  
+     */
+    this.GetWidth = function () {
+        return canvas.width;
+    };
+    
+    /**
+     * @desc The height of canvas
+     * @return Number of pixel height
+     */
+    this.GetHeight = function ()  {
+        return canvas.height;
+    };
+    
+    /**
+     * @desc The X position of the cursor relative to the canvas that contains it and to its dimensions
+     * @return Number that indicate relative position
+     */
+    this.GetPosX = function ()
+    {
+        return movedX;
+    };
+    
+    /**
+     * @desc The Y position of the cursor relative to the canvas that contains it and to its dimensions
+     * @return Number that indicate relative position
+     */
+    this.GetPosY = function ()
+    {
+        return movedY;
+    };
+    
+    /**
+     * @desc Normalizzed value of X move of stick
+     * @return Integer from -100 to +100
+     */
+    this.GetX = function ()
+    {
+        return (100*((movedX - centerX)/maxMoveStick)).toFixed();
+    };
+
+    /**
+     * @desc Normalizzed value of Y move of stick
+     * @return Integer from -100 to +100
+     */
+    this.GetY = function ()
+    {
+        return ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
+    };
+    
+    
+    // Add a destroy method to clean up the canvas and event listeners
+    this.destroy = function() {
+        canvas.removeEventListener('touchstart', onTouchStart);
+        canvas.removeEventListener('touchmove', onTouchMove);
+        canvas.removeEventListener('touchend', onTouchEnd);
+        canvas.removeEventListener('mousedown', onMouseDown);
+        canvas.removeEventListener('mousemove', onMouseMove);
+        canvas.removeEventListener('mouseup', onMouseUp);
+        if (objContainer && canvas.parentNode === objContainer) {
+            objContainer.removeChild(canvas);
+        }
+    };
+});
+
+// End of VirtualJoystick.js content
+
+const socket = new WebSocket("ws://" + window.location.hostname + "/ws");
+var joy1 = null, joy2 = null, joy3 = null; // Initialize to null
+var joy1Interval = null, joy2Interval = null; // Global interval variables
+
+// Global variable to hold the current mode, updated by ESP32 or button clicks
+const singleInterface = window.BOXY_UI_OPTIONS.singleInterface;
+var currentMode = singleInterface < 0 ? 0 : singleInterface;
+
+// Global variables to track last sent joystick values for single joystick mode
+let lastSentX = 0;
+let lastSentY = 0;
+// Global variables to track last sent joystick values for dual joystick mode
+let lastDualJoy1Y = 0;
+let lastDualJoy2Y = 0;
+
+socket.onopen = function(){
+    console.log('Connected to WebSocket');
+    socket.send(JSON.stringify({command: 'get_state'})); // Request initial state from ESP32
+};
+
+socket.onerror = function(error){
+    console.log('WebSocket Error:', error);
+};
+
+socket.onmessage = function(e){
+    console.log('Server message:', e.data);
+    try{
+        var json=JSON.parse(e.data);
+        if("irL"in json)document.getElementById("ir1Value").innerText=json.irL;
+        if("irR"in json)document.getElementById("ir2Value").innerText=json.irR;
+        if("ultrasonicCM"in json)document.getElementById("distanceValue").innerText=json.ultrasonicCM;
+        if("ledState"in json)document.getElementById("ledStateDisplay").innerText=json.ledState?"ON":"OFF";
+        
+        // Update all sliders and their value displays based on ESP32 state
+        if("maxSpeed"in json){
+            document.querySelectorAll('[id^="maxSpeedSlider"]').forEach(slider => {
+                slider.value = json.maxSpeed;
+            });
+            document.querySelectorAll('[id^="sliderValue"]').forEach(span => {
+                span.innerText = json.maxSpeed;
+            });
+        }
+        if("servoAngle"in json){
+            document.querySelectorAll('[id^="servoSlider"]').forEach(slider => {
+                slider.value = json.servoAngle;
+            });
+            document.querySelectorAll('[id^="servoValue"]').forEach(span => {
+                span.innerText = json.servoAngle + "°";
+            });
+        }
+        if("hornFrequency"in json){
+            document.querySelectorAll('[id^="hornFrequencySlider"]').forEach(slider => {
+                slider.value = json.hornFrequency;
+            });
+            document.querySelectorAll('[id^="hornFrequency"]').forEach(span => {
+                span.innerText = json.hornFrequency + " Hz";
+            });
+        }
+        
+        // Update mode based on ESP32's current mode
+        if("currentMode"in json){
+            setMode(json.currentMode, false); // false = don't send back to ESP32
+        }
+    }catch(error){
+        console.log("Raw message (not JSON):", e.data); // Log raw messages for debugging
+    }
+};
+
+// Function to set the active mode and manage joystick instances
+function setMode(modeIndex, sendToESP32 = true){
+    if(singleInterface >= 0) modeIndex = singleInterface;
+    currentMode = modeIndex;
+
+    // Hide all mode sections
+    document.querySelectorAll(".mode-section").forEach(section => {
+        section.classList.remove("active");
+    });
+
+    // Deactivate all mode buttons
+    document.querySelectorAll(".mode-buttons button").forEach(button => {
+        button.classList.remove("active");
+    });
+
+    // Show the selected mode section and activate its button
+    document.getElementById("mode" + modeIndex).classList.add("active");
+    document.getElementById("btnMode" + modeIndex).classList.add("active");
+
+    // Destroy existing joystick instances and clear intervals
+    if (joy1) { joy1.destroy(); joy1 = null; }
+    if (joy2) { joy2.destroy(); joy2 = null; }
+    if (joy3) { joy3.destroy(); joy3 = null; }
+    if (joy1Interval) { clearInterval(joy1Interval); joy1Interval = null; }
+    if (joy2Interval) { clearInterval(joy2Interval); joy2Interval = null; }
+
+    // Initialize joysticks and start their intervals only for the active mode
+    if (modeIndex === 0) { // Joystick Mode
+        joy1 = new JoyStick('joy1Div', { title: "joystick1" });
+        joy1Interval = setInterval(()=>{
+            if(joy1){
+                let x = joy1.GetX(), y = joy1.GetY();
+                if (x !== lastSentX || y !== lastSentY) {
+                    let data = {command:"motor",joyX:x,joyY:y};
+                    socket.send(JSON.stringify(data));
+                    lastSentX = x;
+                    lastSentY = y;
+                }
+            }
+        }, 50);
+    } else if (modeIndex === 1) { // Dual Joystick Mode
+        joy2 = new JoyStick('joy2Div', { title: "joystick2" });
+        joy3 = new JoyStick('joy3Div', { title: "joystick3" });
+        joy2Interval = setInterval(()=>{
+            if(joy2 && joy3){
+                let joy1Y = joy2.GetY(), joy2Y = joy3.GetY(); // joy2 is left, joy3 is right
+                if (joy1Y !== lastDualJoy1Y || joy2Y !== lastDualJoy2Y) {
+                    let data = {command:"dualMotor",joy1Y:joy1Y,joy2Y:joy2Y};
+                    socket.send(JSON.stringify(data));
+                    lastDualJoy1Y = joy1Y;
+                    lastDualJoy2Y = joy2Y;
+                }
+            }
+        }, 50);
+    }
+
+    // Send mode change to ESP32 if initiated from client-side button click
+    if(sendToESP32 && socket.readyState === WebSocket.OPEN){
+        socket.send("setMode:" + modeIndex);
+    }
+}
+
+function toggleLED(){
+    socket.readyState===WebSocket.OPEN&&socket.send(JSON.stringify({command:"toggleLED"}));
+}
+
+// Universal function to update slider value and display
+function updateSliderValue(slider){
+    // Find the corresponding span by getting the next element sibling
+    // This ensures we update the right span for the right slider
+    let valueSpan = slider.previousElementSibling.querySelector('span');
+    if (valueSpan) {
+        valueSpan.innerText = slider.value;
+    }
+    let a=parseInt(slider.value);
+    socket.readyState===WebSocket.OPEN&&socket.send(JSON.stringify({command:"maxSpeed",value:a}));
+}
+
+function updateServo(slider){
+    let valueSpan = slider.previousElementSibling.querySelector('span');
+    if (valueSpan) {
+        valueSpan.innerText = slider.value + "°";
+    }
+    let a=parseInt(slider.value);
+    socket.readyState===WebSocket.OPEN&&socket.send(JSON.stringify({command:"servo",angle:a}));
+}
+
+function updateHornFreqValue(slider){
+    let valueSpan = slider.previousElementSibling.querySelector('span');
+    if (valueSpan) {
+        valueSpan.innerText = slider.value + " Hz";
+    }
+}
+
+// Add event listeners for all horn buttons
+document.querySelectorAll('[id^="hornButton"]').forEach(button => {
+    button.addEventListener('touchstart',e=>{
+        e.preventDefault();
+        // Find the corresponding horn frequency slider
+        const sliderId = `hornFrequencySlider${button.id.slice(-1)}`;
+        const slider = document.getElementById(sliderId);
+        let a = parseInt(slider.value);
+        socket.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ command: 'horn', state: 'on', frequency: a }));
+    });
+    button.addEventListener('touchend',e=>{
+        e.preventDefault();
+        socket.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ command: 'horn', state: 'off' }));
+    });
+    button.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        const sliderId = `hornFrequencySlider${button.id.slice(-1)}`;
+        const slider = document.getElementById(sliderId);
+        let a = parseInt(slider.value);
+        socket.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ command: 'horn', state: 'on', frequency: a }));
+    });
+    button.addEventListener('mouseup',e=>{
+        e.preventDefault();
+        socket.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ command: 'horn', state: 'off' }));
+    });
+});
+
+function sendRoamCommand(a){socket.readyState===WebSocket.OPEN&&(socket.send(a),console.log("Sent command: "+a))}
+function sendCommand(a,b){let c={command:"byLineCmd",action:a};b!==0&&(c.value=b);socket.readyState===WebSocket.OPEN&&(socket.send(JSON.stringify(c)),console.log("Sent ByLine command: "+a));}
+function promptSpeed(){let a=prompt("Enter new max speed (0-255):");if(a===null)return;a=parseInt(a);if(isNaN(a)||a<0||a>255){displayMessageBox("Invalid speed value. Please enter a number between 0 and 255.");}else{socket.readyState===WebSocket.OPEN&&socket.send(JSON.stringify({command:"byLineCmd",action:"speed",value:a}));}}
+function promptServo(){let a=prompt("Enter new servo angle (0-180):");if(a===null)return;a=parseInt(a);if(isNaN(a)||a<0||a>180){displayMessageBox("Invalid servo angle. Please enter a number between 0 and 180.");}else{socket.readyState===WebSocket.OPEN&&socket.send(JSON.stringify({command:"byLineCmd",action:"servo",value:a}));}}
+function sendCustomCommand(){let a=document.getElementById("customCommand").value;if(a.trim()!==""){socket.readyState===WebSocket.OPEN&&socket.send(JSON.stringify({command:"byLineCmd",action:"custom",value:a}));document.getElementById("customCommand").value="";}else{displayMessageBox("Please enter a command.");}}
+
+// Custom Message Box (instead of alert/confirm)
+function displayMessageBox(message) {
+    // Create or find message box container
+    let msgBox = document.getElementById('customMessageBox');
+    if (!msgBox) {
+        msgBox = document.createElement('div');
+        msgBox.id = 'customMessageBox';
+        msgBox.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #222;
+            color: #eee;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, .5);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            max-width: 80%;
+            text-align: center;
+        `;
+        document.body.appendChild(msgBox);
+    }
+
+    // Set message content
+    msgBox.innerHTML = `
+        <p>${message}</p>
+        <button id="msgBoxCloseBtn" style="
+            padding: 8px 15px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background-color .3s ease;
+        ">OK</button>
+    `;
+    msgBox.style.display = 'flex'; // Show it
+
+    // Add close button functionality
+    document.getElementById('msgBoxCloseBtn').onclick = () => {
+        msgBox.style.display = 'none';
+    };
+}
+
+// Set initial mode on page load. Request state from ESP32 to sync.
+window.onload=function(){
+    // The ESP32 will send the current mode on socket, so we don't need to set it immediately here.
+    // Instead, we request the state. The onmessage handler will then call setMode.
+    // setMode(0,false); // Removed: Let ESP32 dictate the initial state
+};
+
+// New Event Listeners for ByLine Mode
+document.getElementById('bylineForward').addEventListener('click', () => {
+    sendCommand('f', 0);
+});
+document.getElementById('bylineBackward').addEventListener('click', () => {
+    sendCommand('b', 0);
+});
+document.getElementById('bylineLeft').addEventListener('click', () => {
+    sendCommand('l', 0);
+});
+document.getElementById('bylineRight').addEventListener('click', () => {
+    sendCommand('r', 0);
+});
+
+
+</script>
+</body>
+</html>
+)rawliteral";
+#endif // MODES_H

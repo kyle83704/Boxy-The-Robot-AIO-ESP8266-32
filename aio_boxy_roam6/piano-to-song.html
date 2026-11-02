@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Boxy Song Maker</title>
+  <!-- Tailwind CSS CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom styles for the piano keys and layout */
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .piano-container {
+      position: relative;
+      /* Adjust padding and margin for responsiveness */
+      padding: 0.5rem;
+    }
+    .white-key {
+      width: 4rem; /* 64px */
+      height: 14rem; /* 224px */
+      border-radius: 0 0 0.5rem 0.5rem;
+      transition: all 0.05s ease;
+      cursor: pointer;
+    }
+    .white-key-label {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem; /* text-xs */
+      color: #9ca3af; /* gray-400 */
+      pointer-events: none; /* Allows clicks to pass through to the key */
+    }
+    .black-key {
+      position: absolute;
+      width: 2.5rem; /* 40px */
+      height: 8rem; /* 128px */
+      z-index: 2;
+      border-radius: 0 0 0.25rem 0.25rem;
+      transition: all 0.05s ease;
+      cursor: pointer;
+    }
+    .black-key-label {
+      position: absolute;
+      bottom: 0.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    /* Key active states */
+    .white-key.active {
+      background: linear-gradient(to bottom, #d6e0ff, #c3d1f0);
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
+    }
+    .black-key.active {
+      background: linear-gradient(to bottom, #444, #222);
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
+    }
+
+    .tooltip {
+      visibility: hidden;
+      width: 120px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px 0;
+      position: absolute;
+      z-index: 100;
+      bottom: 125%; /* Position the tooltip above the button */
+      left: 50%;
+      margin-left: -60px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tooltip.show {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex flex-col items-center p-4 sm:p-8 font-sans">
+
+  <!-- Header -->
+  <h1 class="text-3xl sm:text-4xl font-extrabold mb-4 text-center">🎶 Boxy Song Maker</h1>
+  <p class="text-sm sm:text-base text-gray-400 mb-8 text-center">Record your own song and generate a song.h file for your Boxy robot!</p>
+
+  <!-- Controls -->
+  <div class="flex flex-col sm:flex-row items-center gap-4 mb-8 p-4 bg-gray-800 rounded-xl shadow-lg">
+    <div class="flex flex-wrap items-center justify-center gap-4">
+      <button id="recordBtn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="mr-2">⏺️</span>Record
+      </button>
+      <button id="stopBtn" disabled class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="mr-2">⏹️</span>Stop
+      </button>
+      <button id="playBtn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="mr-2">▶️</span>Play
+      </button>
+      <button id="downloadBtn" disabled class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="mr-2">💾</span>Download
+      </button>
+      <button id="copyBtn" disabled class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="mr-2">📋</span>Copy
+      </button>
+      <div id="copyTooltip" class="tooltip">Copied!</div>
+    </div>
+    <div class="flex items-center gap-2 mt-4 sm:mt-0">
+      <label for="tempoInput" class="text-gray-300">Tempo (BPM):</label>
+      <input id="tempoInput" type="number" value="120" min="40" max="200" step="1" class="w-20 px-2 py-1 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+  </div>
+
+  <!-- Piano -->
+  <div class="piano-container relative flex p-4 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
+    <!-- White Keys Row -->
+    <div class="flex">
+      <div data-key="a" data-note="C3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">C3 (A)</span>
+      </div>
+      <div data-key="s" data-note="D3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">D3 (S)</span>
+      </div>
+      <div data-key="d" data-note="E3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">E3 (D)</span>
+      </div>
+      <div data-key="f" data-note="F3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">F3 (F)</span>
+      </div>
+      <div data-key="g" data-note="G3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">G3 (G)</span>
+      </div>
+      <div data-key="h" data-note="A3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">A3 (H)</span>
+      </div>
+      <div data-key="j" data-note="B3" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">B3 (J)</span>
+      </div>
+      <div data-key="k" data-note="C4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">C4 (K)</span>
+      </div>
+      <div data-key="l" data-note="D4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">D4 (L)</span>
+      </div>
+      <div data-key=";" data-note="E4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">E4 (;)</span>
+      </div>
+      <div data-key="'" data-note="F4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">F4 (')</span>
+      </div>
+      <div data-key="z" data-note="G4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">G4 (Z)</span>
+      </div>
+      <div data-key="x" data-note="A4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">A4 (X)</span>
+      </div>
+      <div data-key="c" data-note="B4" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">B4 (C)</span>
+      </div>
+      <div data-key="v" data-note="C5" class="white-key bg-white border border-black cursor-pointer relative rounded-b-lg">
+        <span class="white-key-label">C5 (V)</span>
+      </div>
+    </div>
+    <!-- Black Keys Row -->
+    <div class="black-keys-row absolute top-0 left-0 flex h-full">
+      <div data-key="q" data-note="CS3" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg">
+        <span class="black-key-label">C#3 (Q)</span>
+      </div>
+      <div data-key="w" data-note="DS3" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(4rem + 1.5rem - 1.25rem); /* Move past first key */">
+        <span class="black-key-label">D#3 (W)</span>
+      </div>
+      <div data-key="e" data-note="FS3" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(2 * (4rem + 1.5rem) + 4rem - 1.25rem); /* Move past first two white keys + a white key */">
+        <span class="black-key-label">F#3 (E)</span>
+      </div>
+      <div data-key="r" data-note="GS3" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(3 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">G#3 (R)</span>
+      </div>
+      <div data-key="t" data-note="AS3" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(4 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">A#3 (T)</span>
+      </div>
+      <div data-key="y" data-note="CS4" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(6 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">C#4 (Y)</span>
+      </div>
+      <div data-key="u" data-note="DS4" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(7 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">D#4 (U)</span>
+      </div>
+      <div data-key="i" data-note="FS4" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(9 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">F#4 (I)</span>
+      </div>
+      <div data-key="o" data-note="GS4" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(10 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">G#4 (O)</span>
+      </div>
+      <div data-key="p" data-note="AS4" class="black-key bg-gray-900 border border-black cursor-pointer -ml-5 rounded-b-lg" style="margin-left: calc(11 * (4rem + 1.5rem) + 4rem - 1.25rem);">
+        <span class="black-key-label">A#4 (P)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Output Area -->
+  <textarea id="output" readonly class="mt-8 w-full max-w-2xl h-64 p-4 bg-gray-800 text-green-400 font-mono rounded-xl shadow-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your generated song.h file will appear here..."></textarea>
+
+  <script>
+    // Constants and Mappings
+    const MAX_RECORD_MS = 30000; // 30 seconds
+    const DEFAULT_TEMPO = 120;
+    const NOTE_FREQS = {
+      'C3': 131, 'CS3': 139, 'D3': 147, 'DS3': 156, 'E3': 165,
+      'F3': 175, 'FS3': 185, 'G3': 196, 'GS3': 208, 'A3': 220,
+      'AS3': 233, 'B3': 247,
+      'C4': 262, 'CS4': 277, 'D4': 294, 'DS4': 311, 'E4': 330,
+      'F4': 349, 'FS4': 370, 'G4': 392, 'GS4': 415, 'A4': 440,
+      'AS4': 466, 'B4': 494, 'C5': 523,
+      'REST': 0
+    };
+
+    // DOM Elements
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const playBtn = document.getElementById('playBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const tempoInput = document.getElementById('tempoInput');
+    const outputEl = document.getElementById('output');
+    const copyTooltip = document.getElementById('copyTooltip');
+
+    // Web Audio API and State
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // activeNotes now stores { oscillator, gainNode } to allow proper control
+    const activeNotes = new Map();
+    const activeKeyElements = new Map(); // Tracks active key elements: key -> HTMLElement
+
+    // Recording State
+    let isRecording = false;
+    let recordingStartTime = 0;
+    // The main data structure for our recorded events
+    // Format: [{ note: 'C4', startTime: 123, endTime: 456 }]
+    let recordedEvents = [];
+    let isPlaying = false;
+    let playingTimeout = null;
+    let playbackSources = [];
+
+    // Mapping keyboard keys to notes - Corrected for unique keys
+    const keyMap = {
+      'a': 'C3', 's': 'D3', 'd': 'E3', 'f': 'F3', 'g': 'G3', 'h': 'A3', 'j': 'B3',
+      'k': 'C4', 'l': 'D4', ';': 'E4', "'": 'F4',
+      'z': 'G4', 'x': 'A4', 'c': 'B4', 'v': 'C5',
+      'q': 'CS3', 'w': 'DS3', 'e': 'FS3', 'r': 'GS3', 't': 'AS3',
+      'y': 'CS4', 'u': 'DS4', 'i': 'FS4', 'o': 'GS4', 'p': 'AS4'
+    };
+
+    // Event Listeners for Buttons
+    recordBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+    playBtn.addEventListener('click', playRecordedSong);
+    downloadBtn.addEventListener('click', downloadSong);
+    copyBtn.addEventListener('click', copyCode);
+
+    // Event Listeners for Piano Keys (Mouse and Touch)
+    document.querySelectorAll('.white-key, .black-key').forEach(el => {
+      const note = el.dataset.note;
+      const downHandler = (e) => {
+        e.preventDefault();
+        el.classList.add('active');
+        startNote(note);
+      };
+      const upHandler = (e) => {
+        e.preventDefault();
+        el.classList.remove('active');
+        stopNote(note);
+      };
+
+      el.addEventListener('mousedown', downHandler);
+      el.addEventListener('mouseup', upHandler);
+      el.addEventListener('mouseleave', () => el.classList.remove('active'));
+      el.addEventListener('touchstart', downHandler, { passive: false });
+      el.addEventListener('touchend', upHandler);
+      el.addEventListener('touchcancel', upHandler);
+    });
+
+    // Event Listeners for Keyboard
+    document.addEventListener('keydown', (e) => {
+      const note = keyMap[e.key.toLowerCase()];
+      const keyEl = document.querySelector(`[data-key="${e.key.toLowerCase()}"]`);
+
+      // Prevent repeated keydown events from triggering multiple notes
+      if (note && !activeNotes.has(note)) {
+        if (keyEl) { keyEl.classList.add('active'); }
+        startNote(note);
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      const note = keyMap[e.key.toLowerCase()];
+      const keyEl = document.querySelector(`[data-key="${e.key.toLowerCase()}"]`);
+      if (note) {
+        if (keyEl) { keyEl.classList.remove('active'); }
+        stopNote(note);
+      }
+    });
+
+    // --- Audio Functions ---
+    function startNote(note) {
+      if (activeNotes.has(note) || !NOTE_FREQS[note]) return;
+
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.value = NOTE_FREQS[note];
+
+      // Connect to destination
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      // Smooth attack: ramp up to full volume
+      const now = audioCtx.currentTime;
+      gainNode.gain.setValueAtTime(0.0001, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.2, now + 0.02);
+
+      oscillator.start(now);
+
+      // Store both the oscillator AND the gain node
+      activeNotes.set(note, { osc: oscillator, gain: gainNode });
+
+      if (isRecording) {
+        recordedEvents.push({ note, startTime: performance.now() - recordingStartTime, endTime: null });
+      }
+    }
+
+    function stopNote(note) {
+      const noteData = activeNotes.get(note);
+      if (!noteData) return;
+
+      const { osc, gain } = noteData;
+
+      // Smoothly ramp down volume over a longer period (0.2 seconds)
+      const now = audioCtx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2); // Slower release
+
+      osc.stop(now + 0.21); // Stop the oscillator after the release
+      activeNotes.delete(note);
+
+      if (isRecording) {
+        const event = recordedEvents.findLast(e => e.note === note && e.endTime === null);
+        if (event) {
+          event.endTime = performance.now() - recordingStartTime;
+        }
+      }
+    }
+
+    // --- Recording Functions ---
+    function startRecording() {
+      // Reset state
+      recordedEvents = [];
+
+      // Update UI
+      isRecording = true;
+      recordingStartTime = performance.now();
+      recordBtn.disabled = true;
+      stopBtn.disabled = false;
+      playBtn.disabled = true;
+      downloadBtn.disabled = true;
+      copyBtn.disabled = true;
+      outputEl.value = 'Recording...';
+
+      // Auto-stop after max time
+      setTimeout(stopRecording, MAX_RECORD_MS);
+    }
+
+    function stopRecording() {
+      if (!isRecording) return;
+      isRecording = false;
+
+      // Ensure all active notes are stopped and their events are closed
+      const now = performance.now() - recordingStartTime;
+      activeNotes.forEach((noteData, note) => {
+        stopNote(note);
+      });
+      recordedEvents.forEach(e => {
+        if (e.endTime === null) {
+          e.endTime = now;
+        }
+      });
+
+      // Update UI
+      recordBtn.disabled = false;
+      stopBtn.disabled = true;
+      const hasContent = recordedEvents.some(e => e.endTime - e.startTime > 0);
+      playBtn.disabled = !hasContent;
+      downloadBtn.disabled = !hasContent;
+      copyBtn.disabled = !hasContent;
+
+      // Generate the song.h file text
+      updateOutput();
+    }
+
+    // --- Playback Functions ---
+    function playRecordedSong() {
+      if (isPlaying) return;
+      isPlaying = true;
+      playBtn.disabled = true;
+      recordBtn.disabled = true;
+
+      // Sort and filter events to ensure correct order and remove zero-duration notes
+      const playableEvents = recordedEvents
+        .filter(e => e.endTime - e.startTime > 0) // Filter out zero-duration events
+        .sort((a, b) => a.startTime - b.startTime);
+
+      if (playableEvents.length === 0) {
+        isPlaying = false;
+        playBtn.disabled = false;
+        recordBtn.disabled = false;
+        return;
+      }
+
+      const now = audioCtx.currentTime;
+      let lastEventTime = 0;
+
+      // Schedule each note using the Web Audio API's clock
+      playableEvents.forEach(event => {
+        const startOffset = event.startTime / 1000; // Convert ms to seconds
+        const duration = (event.endTime - event.startTime) / 1000; // Convert ms to seconds
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.value = NOTE_FREQS[event.note];
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        // Schedule the start and stop of the note
+        gainNode.gain.setValueAtTime(0.0001, now + startOffset);
+        gainNode.gain.linearRampToValueAtTime(0.2, now + startOffset + 0.02); // Short attack
+        gainNode.gain.linearRampToValueAtTime(0.0001, now + startOffset + duration); // Immediate decay
+
+        oscillator.start(now + startOffset);
+        oscillator.stop(now + startOffset + duration + 0.1); // Stop slightly after the decay
+
+        // Keep track of the last event's end time
+        lastEventTime = Math.max(lastEventTime, startOffset + duration);
+        playbackSources.push(oscillator);
+      });
+
+      // Set a timeout to re-enable buttons after playback is finished
+      playingTimeout = setTimeout(() => {
+        isPlaying = false;
+        playBtn.disabled = false;
+        recordBtn.disabled = false;
+        playbackSources = [];
+      }, lastEventTime * 1000 + 200); // Add a small buffer
+    }
+
+    // --- File Generation & Utilities ---
+
+    function quantizeDuration(ms, tempo) {
+      const quarterNoteMs = (60000 / tempo);
+      const candidates = { 1: 1, 2: 2, 4: 4, 8: 8, 16: 16 };
+      let bestDuration = 4; // Default to quarter note
+      let bestError = Infinity;
+
+      // For very short durations, use a 16th note instead of a rest
+      if (ms < 100) {
+        return 16;
+      }
+
+      // Find the best fitting note denominator (1, 2, 4, 8, 16)
+      for (const denom in candidates) {
+        const idealMs = quarterNoteMs * (4 / denom);
+        const error = Math.abs(ms - idealMs);
+        if (error < bestError) {
+          bestError = error;
+          bestDuration = denom;
+        }
+      }
+
+      // If the best match is a whole note but the duration is very short,
+      // fall back to a quarter note to avoid weird quantization.
+      if (bestDuration == 1 && ms < (quarterNoteMs * 2)) {
+          return 4;
+      }
+      return parseInt(bestDuration);
+    }
+
+    function updateOutput() {
+      outputEl.value = buildHeader();
+    }
+
+    function buildHeader(name = "CustomSong") {
+      const tempo = parseInt(tempoInput.value) || DEFAULT_TEMPO;
+      const pairs = [];
+
+      // Create an array of note/duration pairs, including rests
+      let lastEndTime = 0;
+      recordedEvents
+        .filter(e => e.endTime - e.startTime > 0) // Filter out zero-duration events
+        .sort((a,b) => a.startTime - b.startTime) // Sort by start time
+        .forEach(event => {
+          // Calculate rest duration
+          const restDurationMs = event.startTime - lastEndTime;
+          if (restDurationMs > 50) { // If pause is > 50ms, add a REST note
+            const restDenom = quantizeDuration(restDurationMs, tempo);
+            pairs.push(['NOTE_REST', restDenom]);
+          }
+
+          // Calculate note duration
+          const noteDurationMs = event.endTime - event.startTime;
+          const noteDenom = quantizeDuration(noteDurationMs, tempo);
+          pairs.push([`NOTE_${event.note}`, noteDenom]);
+
+          lastEndTime = event.endTime;
+        });
+
+      if (pairs.length === 0) {
+          return '// No notes recorded. Play something and press Stop!';
+      }
+
+      const melodyLines = pairs.map(([n, d]) => `  ${n}, ${d},`).join('\n');
+
+      const NOTE_DEFINES = `#define NOTE_B0  31
+#define NOTE_C1  33
+#define NOTE_CS1 35
+#define NOTE_D1  37
+#define NOTE_DS1 39
+#define NOTE_E1  41
+#define NOTE_F1  44
+#define NOTE_FS1 46
+#define NOTE_G1  49
+#define NOTE_GS1 52
+#define NOTE_A1  55
+#define NOTE_AS1 58
+#define NOTE_B1  62
+#define NOTE_C2  65
+#define NOTE_CS2 69
+#define NOTE_D2  73
+#define NOTE_DS2 78
+#define NOTE_E2  82
+#define NOTE_F2  87
+#define NOTE_FS2 93
+#define NOTE_G2  98
+#define NOTE_GS2 104
+#define NOTE_A2  110
+#define NOTE_AS2 117
+#define NOTE_B2  123
+#define NOTE_C3  131
+#define NOTE_CS3 139
+#define NOTE_D3  147
+#define NOTE_DS3 156
+#define NOTE_E3  165
+#define NOTE_F3  175
+#define NOTE_FS3 185
+#define NOTE_G3  196
+#define NOTE_GS3 208
+#define NOTE_A3  220
+#define NOTE_AS3 233
+#define NOTE_B3  247
+#define NOTE_C4  262
+#define NOTE_CS4 277
+#define NOTE_D4  294
+#define NOTE_DS4 311
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_FS4 370
+#define NOTE_G4  392
+#define NOTE_GS4 415
+#define NOTE_A4  440
+#define NOTE_AS4 466
+#define NOTE_B4  494
+#define NOTE_C5  523
+#define NOTE_CS5 554
+#define NOTE_D5  587
+#define NOTE_DS5 622
+#define NOTE_E5  659
+#define NOTE_F5  698
+#define NOTE_FS5 740
+#define NOTE_G5  784
+#define NOTE_GS5 831
+#define NOTE_A5  880
+#define NOTE_AS5 932
+#define NOTE_B5  988
+#define NOTE_C6  1047
+#define NOTE_CS6 1109
+#define NOTE_D6  1175
+#define NOTE_DS6 1245
+#define NOTE_E6  1319
+#define NOTE_F6  1397
+#define NOTE_FS6 1480
+#define NOTE_G6  1568
+#define NOTE_GS6 1661
+#define NOTE_A6  1760
+#define NOTE_AS6 1865
+#define NOTE_B6  1976
+#define NOTE_C7  2093
+#define NOTE_CS7 2217
+#define NOTE_D7  2349
+#define NOTE_DS7 2489
+#define NOTE_E7  2637
+#define NOTE_F7  2794
+#define NOTE_FS7 2960
+#define NOTE_G7  3136
+#define NOTE_GS7 3322
+#define NOTE_A7  3520
+#define NOTE_AS7 3729
+#define NOTE_B7  3951
+#define NOTE_C8  4186
+#define NOTE_CS8 4435
+#define NOTE_D8  4699
+#define NOTE_DS8 4978
+#define NOTE_REST 0`;
+
+      return `#ifndef SONG_H
+#define SONG_H
+
+// Song: ${name}
+// Generated by Boxy's Song Maker
+
+${NOTE_DEFINES}
+
+const int customsongMelody[] = {
+${melodyLines}
+};
+const int customsongTempo = ${tempo};
+const int customsongNotes = sizeof(customsongMelody) / sizeof(customsongMelody[0]) / 2;
+
+#endif`;
+    }
+
+    function downloadSong() {
+      const content = buildHeader();
+      const blob = new Blob([content], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'song.h';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }
+
+    function copyCode() {
+        const text = outputEl.value;
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            copyTooltip.classList.add('show');
+            setTimeout(() => {
+                copyTooltip.classList.remove('show');
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+        document.body.removeChild(textarea);
+    }
+
+    // Initial content for the output
+    updateOutput();
+  </script>
+</body>
+</html>

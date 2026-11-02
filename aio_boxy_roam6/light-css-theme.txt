@@ -1,0 +1,343 @@
+/* Light Theme CSS */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4; /* Light gray background */
+    color: #333; /* Dark gray text */
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.header {
+    background-color: #e0e0e0; /* Slightly darker light gray header */
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+}
+
+.header h2 {
+    margin: 0;
+    color: #007bff; /* Blue accent color */
+    flex-grow: 1;
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-buttons button {
+    padding: 8px 15px;
+    font-size: .9em;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff; /* Blue button */
+    color: white;
+    cursor: pointer;
+    transition: background-color .3s ease;
+    white-space: nowrap;
+}
+
+.mode-buttons button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+.mode-buttons button.active {
+    background-color: #ff8c00; /* Orange for active button */
+}
+
+.status-bar {
+    background-color: #d0d0d0; /* Gray status bar */
+    padding: 5px;
+    font-size: .8em;
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.status-bar div {
+    flex: 1;
+    text-align: center;
+    padding: 5px;
+}
+
+.status-bar div span {
+    font-weight: 700;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.mode-section {
+    display: none;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.7); /* Translucent white background */
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.2); /* Soft blue glow */
+    box-sizing: border-box;
+}
+
+.mode-section.active {
+    display: block;
+}
+
+.control-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.05); /* Very light gray for control groups */
+    border-radius: 8px;
+}
+
+.joystick-container {
+    width: 200px;
+    height: 200px;
+    margin: 10px auto;
+    border: 2px solid #007bff; /* Blue border */
+    border-radius: 50%;
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.5); /* Translucent white base */
+    touch-action: none;
+}
+
+.joystick-base {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 180px;
+    border: 2px dashed #007bff; /* Blue dashed border */
+    border-radius: 50%;
+}
+
+.joystick-stick {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: #007bff; /* Blue stick */
+    border-radius: 50%;
+    cursor: grab;
+}
+
+.joystick-stick.active {
+    cursor: grabbing;
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-grid button {
+    padding: 12px 20px;
+    font-size: 1.1em;
+    background-color: #007bff; /* Blue button */
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: background-color .3s ease;
+}
+
+.button-grid button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+.slider-group {
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slider-group label {
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.slider-group input[type=range] {
+    width: 80%;
+    max-width: 400px;
+    height: 25px;
+    background: #ccc; /* Light gray track */
+    border-radius: 15px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.slider-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    background: #007bff; /* Blue thumb */
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-group input[type=range]::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    background: #007bff; /* Blue thumb */
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.text-input-group {
+    display: flex;
+    margin-top: 20px;
+}
+
+.text-input-group input {
+    flex: 1;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #007bff; /* Blue border */
+    background-color: #fff; /* White input background */
+    color: #333; /* Dark text */
+    border-radius: 5px 0 0 5px;
+}
+
+.text-input-group button {
+    padding: 10px 15px;
+    background-color: #007bff; /* Blue button */
+    color: white;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+}
+
+.dual-joystick-grid {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+}
+
+.mode-instructions {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.05); /* Light translucent background */
+    border-left: 5px solid #007bff; /* Blue border */
+    text-align: left;
+}
+
+.mode-instructions h3 {
+    color: #007bff; /* Blue text */
+    margin-top: 0;
+}
+
+.mode-instructions ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+.footer {
+    margin-top: auto;
+    padding: 10px;
+    background-color: #e0e0e0; /* Light gray footer */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.hidden {
+    display: none;
+}
+
+@media(max-width: 600px) {
+    .header {
+        flex-direction: column;
+    }
+    .mode-buttons {
+        margin-top: 10px;
+    }
+    .dual-joystick-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* New Flexbox Layout for Dual Joystick Mode (Mode 1) */
+.dual-joystick-main-layout {
+    display: flex;
+    flex-direction: row; /* Arrange items in a row */
+    justify-content: space-around; /* Distribute space around items */
+    align-items: flex-start; /* Align items to the top of the container */
+    width: 100%;
+    gap: 15px; /* Add some space between columns */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens if needed */
+}
+
+.dual-joystick-main-layout > .joystick-column { /* Styling for joystick containers */
+    flex: 1; /* Allow joysticks to take up equal space */
+    min-width: 200px; /* Minimum width for joystick column to prevent squishing */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0; /* Remove padding from control-group if already applied by parent */
+    margin-bottom: 0; /* Adjust margin if needed */
+}
+
+.dual-joystick-main-layout .joystick-container {
+    margin: 0px auto 10px auto; /* Adjust margin for joystick */
+}
+
+.center-controls {
+    flex: 1.5; /* Allow center controls to take up more space than individual joysticks */
+    min-width: 250px; /* Minimum width for center controls */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Space between sliders */
+    padding: 15px; /* Add padding to center controls */
+    background: rgba(0, 0, 0, 0.05); /* Slightly different light background for visual separation */
+    border-radius: 8px;
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Adjustments for responsiveness on smaller screens (e.g., portrait phone) */
+@media(max-width: 768px) { /* Adjust breakpoint as needed for landscape phones */
+    .dual-joystick-main-layout {
+        flex-direction: column; /* Stack columns vertically on smaller screens */
+        align-items: center;
+    }
+    .dual-joystick-main-layout > .joystick-column,
+    .center-controls {
+        width: 100%; /* Take full width when stacked */
+        max-width: 400px; /* Limit max width for readability */
+        margin-bottom: 20px; /* Add space between stacked sections */
+    }
+    .dual-joystick-main-layout .joystick-container {
+        margin-bottom: 10px; /* Keep some space below joystick */
+    }
+    .center-controls .control-group {
+        margin-bottom: 0; /* Remove extra margin from individual control groups inside center-controls */
+    }
+}NG
