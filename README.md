@@ -1,8 +1,8 @@
-# Boxy The Robot AIO
+# Boxy-The-Robot-AIO-ESP8266-32
 
-PlatformIO firmware and web controller for Boxy, with build targets for ESP32
-and ESP8266. Configure the robot's controller, web interface, melody, optional
-hardware, and pin assignments independently for each build environment.
+Boxy the robot build for AIO, supporting ESP32 and ESP8266 boards. Configure
+the robot's controller, web interface, melody, optional hardware, and pin
+assignments independently for each build environment.
 
 ## Contents
 
